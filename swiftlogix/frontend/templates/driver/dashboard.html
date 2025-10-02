@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="dashboard-header mb-4">
+  <h2>🚚 Driver Dashboard</h2>
+  <p class="text-muted">Manage your deliveries and track your earnings.</p>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <div class="stat-card">
+      <div class="stat-icon">📦</div>
+      <h3 id="totalDeliveries">0</h3>
+      <p>Total Deliveries</p>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="stat-card">
+      <div class="stat-icon">💰</div>
+      <h3 id="totalEarnings">₹0</h3>
+      <p>Total Earnings</p>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="stat-card">
+      <div class="stat-icon">🚀</div>
+      <h3 id="activeDeliveries">0</h3>
+      <p>Active</p>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="stat-card">
+      <div class="stat-icon">⭐</div>
+      <h3 id="rating">4.8</h3>
+      <p>Rating</p>
+    </div>
+  </div>
+</div>
+
+<div class="action-buttons mb-4">
+  <a href="/driver/orders" class="btn btn-primary btn-lg">
+    <span>📋 View Available Orders</span>
+  </a>
+  <button class="btn btn-success btn-lg" onclick="updateLocation()">
+    <span>📍 Update My Location</span>
+  </button>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="mb-0">🗺️ Your Location</h5>
+  </div>
+  <div class="card-body">
+    <div id="map"></div>
+    <div class="mt-3">
+      <button class="btn btn-outline-primary" onclick="getCurrentLocation()">
+        📍 Get Current Location
+      </button>
+      <span id="locationStatus" class="ms-3 text-muted"></span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">📊 Earnings Breakdown</h5>
+  </div>
+  <div class="card-body">
+    <div id="earningsLoading" class="text-center py-4">
+      <div class="spinner-border text-primary" role="status"></div>
+    </div>
+    <div id="earningsData" style="display: none;">
+      <div class="row">
+        <div class="col-md-6">
+          <p><strong>Completed Deliveries:</strong> <span id="completedCount">0</span></p>
+          <p><strong>Total Earned:</strong> <span id="earnedAmount" class="text-success">₹0</span></p>
+        </div>
+        <div class="col-md-6">
+          <p><strong>Average per Delivery:</strong> <span id="avgEarning">₹0</span></p>
+          <p><strong>Commission Rate:</strong> <span class="text-muted">10% to platform</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Check authentication
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  
+  if (!token || !user || user.role !== 'driver') {
+    alert('Please login as a driver to access this page');
+    window.location.href = '/login';
+  }
+
+  // Initialize map
+  const map = SwiftLogix.initMap('map', 28.6139, 77.2090, 12);
+  let currentMarker = null;
+
+  // Load earnings
+  async function loadEarnings() {
+    try {
+      const data = await SwiftLogix.authFetch('/api/driver/earnings');
+      
+      document.getElementById('earningsLoading').style.display = 'none';
+      document.getElementById('earningsData').style.display = 'block';
+      
+      document.getElementById('totalDeliveries').textContent = data.delivered_count;
+      document.getElementById('totalEarnings').textContent = '₹' + data.total_earnings;
+      document.getElementById('completedCount').textContent = data.delivered_count;
+      document.getElementById('earnedAmount').textContent = '₹' + data.total_earnings;
+      
+      const avg = data.delivered_count > 0 ? (data.total_earnings / data.delivered_count).toFixed(2) : 0;
+      document.getElementById('avgEarning').textContent = '₹' + avg;
+      
+    } catch (error) {
+      document.getElementById('earningsLoading').innerHTML = `
+        <div class="alert alert-danger">Failed to load earnings: ${error.message}</div>
+      `;
+    }
+  }
+
+  // Get current location
+  function getCurrentLocation() {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
+      return;
+    }
+    
+    document.getElementById('locationStatus').textContent = 'Getting location...';
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        
+        if (currentMarker) currentMarker.remove();
+        currentMarker = SwiftLogix.addMarker(map, lat, lng, 'Your Location');
+        map.setView([lat, lng], 14);
+        
+        document.getElementById('locationStatus').textContent = `Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      },
+      (error) => {
+        document.getElementById('locationStatus').textContent = 'Failed to get location';
+        alert('Error getting location: ' + error.message);
+      }
+    );
+  }
+
+  // Update location on server
+  async function updateLocation() {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported');
+      return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          await SwiftLogix.authFetch('/api/driver/location', {
+            method: 'POST',
+            body: JSON.stringify({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            })
+          });
+          alert('Location updated successfully!');
+          getCurrentLocation();
+        } catch (error) {
+          alert('Failed to update location: ' + error.message);
+        }
+      },
+      (error) => {
+        alert('Error getting location: ' + error.message);
+      }
+    );
+  }
+
+  loadEarnings();
+  getCurrentLocation();
+</script>
+
+<style>
+.dashboard-header h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+  border-color: #667eea;
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.stat-card h3 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-card p {
+  color: #6b7280;
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+  flex: 1;
+  min-width: 200px;
+}
+
+.card {
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.card-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 15px 15px 0 0 !important;
+  padding: 1.25rem;
+}
+
+.card-header h5 {
+  color: white;
+  background: none;
+  -webkit-text-fill-color: white;
+}
+</style>
+{% endblock %}

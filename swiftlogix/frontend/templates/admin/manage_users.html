@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="dashboard-header mb-4">
+  <h2>👥 User Management</h2>
+  <p class="text-muted">View and manage all platform users.</p>
+</div>
+
+<div class="row mb-3">
+  <div class="col-md-6">
+    <a href="/api/admin/orders/export" class="btn btn-success" download>
+      <span>📥 Export Orders (CSV)</span>
+    </a>
+  </div>
+  <div class="col-md-6 text-md-end">
+    <button class="btn btn-primary" onclick="loadUsers()">
+      <span>🔄 Refresh Users</span>
+    </button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">All Users</h5>
+  </div>
+  <div class="card-body">
+    <div id="loading" class="text-center py-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+    <div id="usersTable" style="display: none;">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <!-- Users will be populated here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- User Details Modal -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">User Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="userDetailsContent">
+        <!-- User details will be populated here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Check authentication
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  
+  if (!token || !user || user.role !== 'admin') {
+    alert('Please login as an admin to access this page');
+    window.location.href = '/login';
+  }
+
+  // Load all users
+  async function loadUsers() {
+    try {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('usersTable').style.display = 'none';
+      
+      const users = await SwiftLogix.authFetch('/api/admin/users');
+      
+      const tbody = document.getElementById('usersTableBody');
+      tbody.innerHTML = '';
+      
+      users.forEach(user => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${user.id}</td>
+          <td>${user.name}</td>
+          <td>${user.email}</td>
+          <td><span class="badge bg-${getRoleColor(user.role)}">${user.role}</span></td>
+          <td><span class="badge bg-${user.is_active ? 'success' : 'danger'}">${user.is_active ? 'Active' : 'Inactive'}</span></td>
+          <td>${formatDate(user.created_at)}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary" onclick="showUserDetails(${user.id})">
+              View Details
+            </button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+      
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('usersTable').style.display = 'block';
+      
+    } catch (error) {
+      document.getElementById('loading').innerHTML = `
+        <div class="alert alert-danger">Failed to load users: ${error.message}</div>
+      `;
+    }
+  }
+  
+  function getRoleColor(role) {
+    switch(role) {
+      case 'admin': return 'primary';
+      case 'customer': return 'success';
+      case 'driver': return 'warning';
+      default: return 'secondary';
+    }
+  }
+  
+  function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  }
+  
+  function showUserDetails(userId) {
+    // In a real implementation, you would fetch detailed user information
+    // For now, we'll just show a simple message
+    alert(`Detailed view for user ID: ${userId}\nIn a full implementation, this would show password (hashed), ID, and all details.`);
+  }
+
+  // Load users when page loads
+  document.addEventListener('DOMContentLoaded', loadUsers);
+</script>
+
+<style>
+.dashboard-header h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.card {
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.card-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 15px 15px 0 0 !important;
+  padding: 1.25rem;
+}
+
+.badge {
+  font-weight: 600;
+  padding: 0.5em 0.75em;
+}
+</style>
+{% endblock %}

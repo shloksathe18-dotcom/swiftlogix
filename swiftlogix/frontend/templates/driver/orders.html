@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>Available Orders</h3>
+<button id="refresh" class="btn btn-sm btn-outline-secondary">Refresh</button>
+<table class="table mt-2">
+  <thead><tr><th>ID</th><th>Fare</th><th>Action</th></tr></thead>
+  <tbody id="rows"></tbody>
+</table>
+<script>
+async function load() {
+  const orders = await SwiftLogix.authFetch('/api/driver/orders/available');
+  const rows = document.getElementById('rows');
+  rows.innerHTML = '';
+  orders.forEach(o => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${o.id}</td><td>₹ ${o.fare_total}</td><td><button class='btn btn-sm btn-success' data-id='${o.id}'>Accept</button></td>`;
+    rows.appendChild(tr);
+  });
+  document.querySelectorAll('button[data-id]').forEach(btn => btn.onclick = async () => {
+    const id = btn.getAttribute('data-id');
+    const res = await SwiftLogix.authFetch(`/api/driver/orders/${id}/accept`, { method: 'POST' });
+    alert('Accepted order ' + id);
+    load();
+  });
+}
+
+document.getElementById('refresh').onclick = load;
+load();
+</script>
+{% endblock %}

@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="dashboard-header mb-4">
+  <h2>👤 Customer Dashboard</h2>
+  <p class="text-muted">Welcome back! Manage your orders and track deliveries.</p>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-4 mb-3">
+    <div class="stat-card">
+      <div class="stat-icon">📦</div>
+      <h3 id="totalOrders">0</h3>
+      <p>Total Orders</p>
+    </div>
+  </div>
+  <div class="col-md-4 mb-3">
+    <div class="stat-card">
+      <div class="stat-icon">🚚</div>
+      <h3 id="activeOrders">0</h3>
+      <p>Active Orders</p>
+    </div>
+  </div>
+  <div class="col-md-4 mb-3">
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <h3 id="completedOrders">0</h3>
+      <p>Completed</p>
+    </div>
+  </div>
+</div>
+
+<div class="action-buttons mb-4">
+  <a href="/customer/create_order" class="btn btn-primary btn-lg">
+    <span>📦 Create New Order</span>
+  </a>
+  <a href="/customer/track_order" class="btn btn-secondary btn-lg">
+    <span>🗺️ Track Order</span>
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">📋 Recent Orders</h5>
+  </div>
+  <div class="card-body">
+    <div id="loading" class="text-center py-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+    <div id="ordersTable" style="display: none;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Status</th>
+            <th>Distance</th>
+            <th>Fare</th>
+            <th>Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="ordersBody"></tbody>
+      </table>
+    </div>
+    <div id="noOrders" style="display: none;" class="text-center py-4">
+      <p class="text-muted">No orders yet. Create your first order!</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Check authentication
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  
+  if (!token || !user || user.role !== 'customer') {
+    alert('Please login as a customer to access this page');
+    window.location.href = '/login';
+  }
+
+  // Load orders
+  async function loadOrders() {
+    try {
+      const orders = await SwiftLogix.authFetch('/api/customer/orders');
+      
+      document.getElementById('loading').style.display = 'none';
+      
+      if (orders.length === 0) {
+        document.getElementById('noOrders').style.display = 'block';
+        return;
+      }
+      
+      document.getElementById('ordersTable').style.display = 'block';
+      
+      // Update stats
+      document.getElementById('totalOrders').textContent = orders.length;
+      const active = orders.filter(o => ['pending', 'assigned', 'picked', 'delivering'].includes(o.status)).length;
+      const completed = orders.filter(o => o.status === 'delivered').length;
+      document.getElementById('activeOrders').textContent = active;
+      document.getElementById('completedOrders').textContent = completed;
+      
+      // Populate table
+      const tbody = document.getElementById('ordersBody');
+      tbody.innerHTML = orders.map(order => `
+        <tr>
+          <td><strong>#${order.id}</strong></td>
+          <td><span class="badge bg-${getStatusColor(order.status)}">${order.status}</span></td>
+          <td>${order.distance_km} km</td>
+          <td>₹${order.fare_total}</td>
+          <td>${new Date(order.created_at).toLocaleDateString()}</td>
+          <td>
+            <a href="/customer/track_order?id=${order.id}" class="btn btn-sm btn-outline-primary">Track</a>
+          </td>
+        </tr>
+      `).join('');
+      
+    } catch (error) {
+      document.getElementById('loading').innerHTML = `
+        <div class="alert alert-danger">Failed to load orders. ${error.message}</div>
+      `;
+    }
+  }
+  
+  function getStatusColor(status) {
+    const colors = {
+      'pending': 'warning',
+      'assigned': 'info',
+      'picked': 'primary',
+      'delivering': 'primary',
+      'delivered': 'success',
+      'cancelled': 'danger'
+    };
+    return colors[status] || 'secondary';
+  }
+  
+  loadOrders();
+</script>
+
+<style>
+.dashboard-header h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+  border-color: #667eea;
+}
+
+.stat-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.stat-card h3 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.stat-card p {
+  color: #6b7280;
+  margin: 0;
+  font-weight: 600;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+  flex: 1;
+  min-width: 200px;
+}
+
+.card {
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.card-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 15px 15px 0 0 !important;
+  padding: 1.25rem;
+}
+
+.card-header h5 {
+  color: white;
+  background: none;
+  -webkit-text-fill-color: white;
+}
+</style>
+{% endblock %}
