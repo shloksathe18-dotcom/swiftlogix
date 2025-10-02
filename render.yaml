@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: swiftlogix
+    env: python
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT backend.wsgi:application"
+    envVars:
+      - key: FLASK_APP
+        value: backend.app:create_app
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        value: change-this-secret-key-in-production
+      - key: JWT_SECRET_KEY
+        value: change-this-jwt-secret-in-production
+      - key: DATABASE_URL
+        value: sqlite:///swiftlogix.db
+      - key: SECURE_COOKIES
+        value: "true"
