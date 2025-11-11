@@ -1,0 +1,774 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+  <h3>Create Order</h3>
+  
+  <div id="orderFormContainer">
+    <form id="orderForm" class="row g-3" enctype="multipart/form-data">
+      <!-- Pickup Location Section -->
+      <div class="col-md-6">
+        <label class="form-label">Pickup Location</label>
+        <div class="input-group">
+          <input class="form-control" id="pickup_location" placeholder="Enter pickup location" required />
+          <button class="btn btn-outline-secondary" type="button" id="getPickupLocation">
+            <i class="fas fa-location-arrow"></i> Get Current
+          </button>
+        </div>
+        <input type="hidden" id="pickup_lat" name="pickup_lat">
+        <input type="hidden" id="pickup_lng" name="pickup_lng">
+      </div>
+      
+      <!-- Drop Location Section -->
+      <div class="col-md-6">
+        <label class="form-label">Drop Location</label>
+        <div class="input-group">
+          <input class="form-control" id="drop_location" placeholder="Enter drop location" required />
+          <button class="btn btn-outline-secondary" type="button" id="getDropLocation">
+            <i class="fas fa-location-arrow"></i> Get Current
+          </button>
+        </div>
+        <input type="hidden" id="drop_lat" name="drop_lat">
+        <input type="hidden" id="drop_lng" name="drop_lng">
+      </div>
+      
+      <!-- Combined Map Section for Manual Selection -->
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <h6>Select Locations on Map</h6>
+            <div id="combinedMap" style="height: 400px; border-radius: 8px;"></div>
+            <div class="mt-2">
+              <small class="text-muted">First click sets Pickup (blue), second click sets Drop (red)</small>
+              <div id="pickupAddress" class="mt-1 fw-bold text-primary"></div>
+              <div id="dropAddress" class="mt-1 fw-bold text-danger"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-6">
+        <label class="form-label">Material Type</label>
+        <input class="form-control" id="material_type" placeholder="e.g., Electronics, Documents, etc." required />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Material Description</label>
+        <textarea class="form-control" id="material_description" rows="3" placeholder="Describe the material being shipped"></textarea>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Material Photo</label>
+        <input class="form-control" type="file" id="material_photo" accept="image/*" />
+      </div>
+      
+      <!-- Weight Input Section -->
+      <div class="col-12">
+        <h5>Material Weight</h5>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="weightOption" id="liveDetection" value="live" checked>
+          <label class="form-check-label" for="liveDetection">
+            Live Material Detection
+          </label>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="radio" name="weightOption" id="manualEntry" value="manual">
+          <label class="form-check-label" for="manualEntry">
+            Manual Weight Entry
+          </label>
+        </div>
+      </div>
+      
+      <!-- Live Detection Section -->
+      <div id="liveDetectionSection" class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <h6>Live Material Detection</h6>
+            <div class="row">
+              <div class="col-md-6">
+                <video id="video" width="100%" height="200" autoplay playsinline></video>
+                <button type="button" class="btn btn-primary mt-2" id="startCamera">Start Camera</button>
+                <button type="button" class="btn btn-secondary mt-2" id="detectMaterial">Detect Material</button>
+              </div>
+              <div class="col-md-6">
+                <div id="detectionResult" class="alert alert-info" style="display: none;">
+                  <h6>Detection Result:</h6>
+                  <p>Material Type: <span id="detectedType">-</span></p>
+                  <p>Weight: <span id="detectedWeight">-</span> kg</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Manual Entry Section -->
+      <div id="manualEntrySection" class="col-12" style="display: none;">
+        <div class="card">
+          <div class="card-body">
+            <h6>Manual Weight Entry</h6>
+            <div class="mb-3">
+              <label class="form-label">Weight (kg)</label>
+              <input type="number" class="form-control" id="manual_weight" step="0.01" placeholder="Enter weight in kilograms" min="0.01">
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Price Calculation Section -->
+      <div class="col-12" id="priceCalculationSection" style="display: none;">
+        <div class="card">
+          <div class="card-body">
+            <h6>Order Price Calculation</h6>
+            <div class="row">
+              <div class="col-md-6">
+                <p><strong>Material Weight:</strong> <span id="calcWeight">0</span> kg</p>
+                <p><strong>Weight Cost:</strong> (Weight × ₹5) = ₹<span id="weightCost">0</span></p>
+              </div>
+              <div class="col-md-6">
+                <p><strong>Distance:</strong> <span id="calcDistance">0</span> km</p>
+                <p><strong>Distance Cost:</strong> (Distance × ₹10) = ₹<span id="distanceCost">0</span></p>
+              </div>
+              <div class="col-12">
+                <hr>
+                <h5 class="text-center"><strong>Total Price: ₹<span id="totalPrice">0</span></strong></h5>
+              </div>
+            </div>
+            <div class="mt-3 text-center">
+              <button type="button" class="btn btn-primary" id="confirmOrder">Confirm Order</button>
+              <button type="button" class="btn btn-secondary" id="cancelCalculation">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Calculating Price Message -->
+      <div class="col-12" id="calculatingPriceMessage" style="display: none;">
+        <div class="alert alert-info text-center">
+          <h5><i class="fas fa-spinner fa-spin"></i> Calculating price...</h5>
+          <p>Please wait while we calculate the distance and total price for your order.</p>
+        </div>
+      </div>
+      
+      <div class="col-12">
+        <button class="btn btn-success" type="submit" id="createOrderBtn">Create Order</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="successMessage" class="mt-4" style="display: none;">
+    <div class="alert alert-success text-center">
+      <h4>✅ Order Created Successfully!</h4>
+      <p>Your order has been created with the following details:</p>
+      <div class="row justify-content-center">
+        <div class="col-md-8">
+          <table class="table table-bordered">
+            <tr>
+              <th>Order ID</th>
+              <td><strong id="orderIdDisplay"></strong></td>
+            </tr>
+            <tr>
+              <th>Total Distance</th>
+              <td><strong id="distanceDisplay"></strong> km</td>
+            </tr>
+            <tr>
+              <th>Material Weight</th>
+              <td><strong id="weightDisplay"></strong> kg</td>
+            </tr>
+            <tr>
+              <th>Final Price</th>
+              <td><strong>₹<span id="priceDisplay"></span></strong></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <p>You can track your order status from the dashboard.</p>
+      <button class="btn btn-primary" onclick="resetForm()">Create Another Order</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const form = document.getElementById('orderForm');
+const orderFormContainer = document.getElementById('orderFormContainer');
+const successMessage = document.getElementById('successMessage');
+const orderIdDisplay = document.getElementById('orderIdDisplay');
+const distanceDisplay = document.getElementById('distanceDisplay');
+const weightDisplay = document.getElementById('weightDisplay');
+const priceDisplay = document.getElementById('priceDisplay');
+const liveDetectionSection = document.getElementById('liveDetectionSection');
+const manualEntrySection = document.getElementById('manualEntrySection');
+const priceCalculationSection = document.getElementById('priceCalculationSection');
+const calculatingPriceMessage = document.getElementById('calculatingPriceMessage');
+const createOrderBtn = document.getElementById('createOrderBtn');
+let stream = null;
+let combinedMap;
+let pickupMarker, dropMarker;
+let clickCount = 0; // Track number of clicks for pickup/drop selection
+let calculatedDistance = 0;
+let calculatedWeight = 0;
+let calculatedPrice = 0;
+
+// Initialize map when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize combined map
+  combinedMap = L.map('combinedMap').setView([28.6139, 77.2090], 13); // Default to Delhi
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(combinedMap);
+  
+  // Add click event for combined map
+  combinedMap.on('click', function(e) {
+    clickCount++;
+    
+    if (clickCount === 1) {
+      // First click - set pickup location
+      setPickupLocation(e.latlng);
+    } else if (clickCount === 2) {
+      // Second click - set drop location
+      setDropLocation(e.latlng);
+      
+      // Reset click counter after setting both locations
+      clickCount = 0;
+      
+      // Automatically calculate distance when both points are set
+      calculateAndDisplayDistance();
+    } else {
+      // Reset counter if it somehow goes beyond 2
+      clickCount = 0;
+    }
+  });
+});
+
+// Set pickup location
+function setPickupLocation(latlng) {
+  // Remove existing pickup marker if any
+  if (pickupMarker) {
+    combinedMap.removeLayer(pickupMarker);
+  }
+  
+  // Add new blue marker for pickup
+  pickupMarker = L.marker(latlng, { 
+    draggable: true,
+    icon: L.divIcon({ className: 'custom-marker', html: '<div class="marker pickup-marker"></div>', iconSize: [30, 30] })
+  }).addTo(combinedMap);
+  
+  // Update hidden fields
+  document.getElementById('pickup_lat').value = latlng.lat;
+  document.getElementById('pickup_lng').value = latlng.lng;
+  
+  // Reverse geocode to get address
+  reverseGeocode(latlng.lat, latlng.lng, 'pickup');
+  
+  // Update marker position when dragged
+  pickupMarker.on('dragend', function(e) {
+    const newPosition = e.target.getLatLng();
+    document.getElementById('pickup_lat').value = newPosition.lat;
+    document.getElementById('pickup_lng').value = newPosition.lng;
+    reverseGeocode(newPosition.lat, newPosition.lng, 'pickup');
+    
+    // Recalculate distance if both points exist
+    if (document.getElementById('drop_lat').value && document.getElementById('drop_lng').value) {
+      calculateAndDisplayDistance();
+    }
+  });
+}
+
+// Set drop location
+function setDropLocation(latlng) {
+  // Remove existing drop marker if any
+  if (dropMarker) {
+    combinedMap.removeLayer(dropMarker);
+  }
+  
+  // Add new red marker for drop
+  dropMarker = L.marker(latlng, { 
+    draggable: true,
+    icon: L.divIcon({ className: 'custom-marker', html: '<div class="marker drop-marker"></div>', iconSize: [30, 30] })
+  }).addTo(combinedMap);
+  
+  // Update hidden fields
+  document.getElementById('drop_lat').value = latlng.lat;
+  document.getElementById('drop_lng').value = latlng.lng;
+  
+  // Reverse geocode to get address
+  reverseGeocode(latlng.lat, latlng.lng, 'drop');
+  
+  // Update marker position when dragged
+  dropMarker.on('dragend', function(e) {
+    const newPosition = e.target.getLatLng();
+    document.getElementById('drop_lat').value = newPosition.lat;
+    document.getElementById('drop_lng').value = newPosition.lng;
+    reverseGeocode(newPosition.lat, newPosition.lng, 'drop');
+    
+    // Recalculate distance if both points exist
+    if (document.getElementById('pickup_lat').value && document.getElementById('pickup_lng').value) {
+      calculateAndDisplayDistance();
+    }
+  });
+}
+
+// Weight option change handler
+document.querySelectorAll('input[name="weightOption"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    if (this.value === 'live') {
+      liveDetectionSection.style.display = 'block';
+      manualEntrySection.style.display = 'none';
+    } else {
+      liveDetectionSection.style.display = 'none';
+      manualEntrySection.style.display = 'block';
+    }
+  });
+});
+
+// Live location functionality
+document.getElementById('getPickupLocation').addEventListener('click', function() {
+  getLocationAndUpdateField('pickup');
+});
+
+document.getElementById('getDropLocation').addEventListener('click', function() {
+  getLocationAndUpdateField('drop');
+});
+
+function getLocationAndUpdateField(locationType) {
+  if (!navigator.geolocation) {
+    alert('Geolocation is not supported by your browser.');
+    return;
+  }
+  
+  // Show loading state
+  const button = locationType === 'pickup' ? 
+    document.getElementById('getPickupLocation') : 
+    document.getElementById('getDropLocation');
+  const originalText = button.innerHTML;
+  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting...';
+  button.disabled = true;
+  
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      
+      try {
+        // Reverse geocode to get address
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+        const data = await response.json();
+        
+        // Update form fields and maps
+        if (locationType === 'pickup') {
+          document.getElementById('pickup_location').value = data.display_name || `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+          document.getElementById('pickup_lat').value = lat;
+          document.getElementById('pickup_lng').value = lng;
+          
+          // Update map marker
+          setPickupLocation(L.latLng(lat, lng));
+        } else {
+          document.getElementById('drop_location').value = data.display_name || `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+          document.getElementById('drop_lat').value = lat;
+          document.getElementById('drop_lng').value = lng;
+          
+          // Update map marker
+          setDropLocation(L.latLng(lat, lng));
+        }
+        
+        // Calculate distance if both points are set
+        if (document.getElementById('pickup_lat').value && document.getElementById('pickup_lng').value &&
+            document.getElementById('drop_lat').value && document.getElementById('drop_lng').value) {
+          calculateAndDisplayDistance();
+        }
+      } catch (error) {
+        console.error('Error reverse geocoding:', error);
+        const locationText = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+        
+        if (locationType === 'pickup') {
+          document.getElementById('pickup_location').value = locationText;
+          document.getElementById('pickup_lat').value = lat;
+          document.getElementById('pickup_lng').value = lng;
+          setPickupLocation(L.latLng(lat, lng));
+        } else {
+          document.getElementById('drop_location').value = locationText;
+          document.getElementById('drop_lat').value = lat;
+          document.getElementById('drop_lng').value = lng;
+          setDropLocation(L.latLng(lat, lng));
+        }
+      }
+      
+      // Restore button
+      button.innerHTML = originalText;
+      button.disabled = false;
+    },
+    (error) => {
+      console.error('Error getting location:', error);
+      alert('Unable to retrieve your location. Please try again or select manually on the map.');
+      
+      // Restore button
+      button.innerHTML = originalText;
+      button.disabled = false;
+    }
+  );
+}
+
+// Reverse geocode function
+async function reverseGeocode(lat, lng, locationType) {
+  try {
+    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+    const data = await response.json();
+    
+    if (data.display_name) {
+      if (locationType === 'pickup') {
+        document.getElementById('pickupAddress').textContent = "Pickup: " + data.display_name;
+        document.getElementById('pickup_location').value = data.display_name;
+      } else {
+        document.getElementById('dropAddress').textContent = "Drop: " + data.display_name;
+        document.getElementById('drop_location').value = data.display_name;
+      }
+    }
+  } catch (error) {
+    console.error('Error reverse geocoding:', error);
+    const locationText = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+    if (locationType === 'pickup') {
+      document.getElementById('pickupAddress').textContent = "Pickup: " + locationText;
+    } else {
+      document.getElementById('dropAddress').textContent = "Drop: " + locationText;
+    }
+  }
+}
+
+// Camera functionality
+document.getElementById('startCamera').addEventListener('click', async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    document.getElementById('video').srcObject = stream;
+  } catch (err) {
+    console.error("Error accessing camera: ", err);
+    alert("Could not access camera. Please ensure you have given permission.");
+  }
+});
+
+// Mock detection function (in a real app, this would call an AI model)
+document.getElementById('detectMaterial').addEventListener('click', () => {
+  // Simulate detection with random values
+  const materialTypes = ['Electronics', 'Documents', 'Clothing', 'Books', 'Food'];
+  const detectedType = materialTypes[Math.floor(Math.random() * materialTypes.length)];
+  const detectedWeight = (Math.random() * 10 + 0.5).toFixed(2);
+  
+  // Update form fields
+  document.getElementById('material_type').value = detectedType;
+  document.getElementById('detectedType').textContent = detectedType;
+  document.getElementById('detectedWeight').textContent = detectedWeight;
+  
+  // Show detection result
+  document.getElementById('detectionResult').style.display = 'block';
+  
+  // Also update manual weight field for consistency
+  document.getElementById('manual_weight').value = detectedWeight;
+});
+
+// Calculate distance using OSRM API
+async function calculateDistance(pickupLat, pickupLng, dropLat, dropLng) {
+  try {
+    // Using OSRM public API to calculate road distance
+    const url = `https://router.project-osrm.org/route/v1/driving/${pickupLng},${pickupLat};${dropLng},${dropLat}?overview=false`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error('Failed to calculate distance');
+    }
+    
+    const data = await response.json();
+    
+    if (data.routes && data.routes.length > 0) {
+      // Distance is in meters, convert to kilometers
+      return data.routes[0].distance / 1000;
+    } else {
+      throw new Error('No route found');
+    }
+  } catch (error) {
+    console.error('Error calculating distance:', error);
+    // Fallback to straight-line distance calculation
+    return calculateStraightLineDistance(pickupLat, pickupLng, dropLat, dropLng);
+  }
+}
+
+// Fallback straight-line distance calculation (Haversine formula)
+function calculateStraightLineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+// Calculate and display distance
+async function calculateAndDisplayDistance() {
+  const pickupLat = document.getElementById('pickup_lat').value;
+  const pickupLng = document.getElementById('pickup_lng').value;
+  const dropLat = document.getElementById('drop_lat').value;
+  const dropLng = document.getElementById('drop_lng').value;
+  
+  if (pickupLat && pickupLng && dropLat && dropLng) {
+    try {
+      const distance = await calculateDistance(
+        parseFloat(pickupLat), parseFloat(pickupLng),
+        parseFloat(dropLat), parseFloat(dropLng)
+      );
+      
+      // Store distance for later use
+      calculatedDistance = distance;
+      
+      // If we're in the price calculation phase, update the display
+      if (priceCalculationSection.style.display !== 'none') {
+        document.getElementById('calcDistance').textContent = distance.toFixed(2);
+        const weight = parseFloat(document.getElementById('calcWeight').textContent);
+        const distanceCost = distance * 10;
+        const weightCost = weight * 5;
+        const totalPrice = weightCost + distanceCost;
+        
+        document.getElementById('distanceCost').textContent = distanceCost.toFixed(2);
+        document.getElementById('totalPrice').textContent = totalPrice.toFixed(2);
+        
+        // Update stored calculated price
+        calculatedPrice = totalPrice;
+      }
+    } catch (error) {
+      console.error('Error calculating distance:', error);
+    }
+  }
+}
+
+// Calculate price based on weight and distance
+function calculatePrice(weight, distance) {
+  // Formula: Order Price = (Material Weight × 5) + (Distance × 10)
+  return (weight * 5) + (distance * 10);
+}
+
+// Show price calculation
+function showPriceCalculation(weight, distance) {
+  const weightCost = weight * 5;
+  const distanceCost = distance * 10;
+  const totalPrice = weightCost + distanceCost;
+  
+  document.getElementById('calcWeight').textContent = weight.toFixed(2);
+  document.getElementById('calcDistance').textContent = distance.toFixed(2);
+  document.getElementById('weightCost').textContent = weightCost.toFixed(2);
+  document.getElementById('distanceCost').textContent = distanceCost.toFixed(2);
+  document.getElementById('totalPrice').textContent = totalPrice.toFixed(2);
+  
+  calculatedWeight = weight;
+  calculatedDistance = distance;
+  calculatedPrice = totalPrice;
+  
+  priceCalculationSection.style.display = 'block';
+}
+
+// Cancel price calculation
+document.getElementById('cancelCalculation').addEventListener('click', function() {
+  priceCalculationSection.style.display = 'none';
+  createOrderBtn.style.display = 'block';
+});
+
+// Confirm order after price calculation
+document.getElementById('confirmOrder').addEventListener('click', async function() {
+  // Submit the order with calculated price
+  await submitOrderWithPrice();
+});
+
+// Form submission handler
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  try {
+    // Validate required fields
+    const pickupLocation = document.getElementById('pickup_location').value;
+    const dropLocation = document.getElementById('drop_location').value;
+    const pickupLat = document.getElementById('pickup_lat').value;
+    const pickupLng = document.getElementById('pickup_lng').value;
+    const dropLat = document.getElementById('drop_lat').value;
+    const dropLng = document.getElementById('drop_lng').value;
+    const materialType = document.getElementById('material_type').value;
+    
+    if (!pickupLocation || !dropLocation) {
+      alert('Please fill both pickup and drop locations.');
+      return;
+    }
+    
+    if (!pickupLat || !pickupLng || !dropLat || !dropLng) {
+      alert('Please select both pickup and drop locations on the map or use current location.');
+      return;
+    }
+    
+    // Validate weight input
+    const weightOption = document.querySelector('input[name="weightOption"]:checked').value;
+    let materialWeight = 0;
+    
+    if (weightOption === 'live') {
+      const detectedWeight = document.getElementById('detectedWeight').textContent;
+      if (detectedWeight === '-' || !detectedWeight) {
+        alert('Please run live material detection first.');
+        return;
+      }
+      materialWeight = parseFloat(detectedWeight);
+    } else {
+      materialWeight = parseFloat(document.getElementById('manual_weight').value);
+      if (isNaN(materialWeight) || materialWeight <= 0) {
+        alert('Please enter a valid weight greater than 0.');
+        return;
+      }
+    }
+    
+    // Show calculating price message
+    calculatingPriceMessage.style.display = 'block';
+    createOrderBtn.style.display = 'none';
+    
+    // Calculate distance
+    const distance = await calculateDistance(
+      parseFloat(pickupLat), parseFloat(pickupLng),
+      parseFloat(dropLat), parseFloat(dropLng)
+    );
+    
+    // Calculate price
+    const price = calculatePrice(materialWeight, distance);
+    
+    // Hide calculating message
+    calculatingPriceMessage.style.display = 'none';
+    
+    // Show price calculation
+    showPriceCalculation(materialWeight, distance);
+    createOrderBtn.style.display = 'block';
+    
+  } catch (error) {
+    console.error('Error:', error);
+    calculatingPriceMessage.style.display = 'none';
+    createOrderBtn.style.display = 'block';
+    alert(`Error calculating price: ${error.message}`);
+  }
+});
+
+// Submit order with calculated price
+async function submitOrderWithPrice() {
+  try {
+    // Get form data
+    const formData = new FormData();
+    formData.append('pickup_location', document.getElementById('pickup_location').value);
+    formData.append('drop_location', document.getElementById('drop_location').value);
+    formData.append('pickup_lat', document.getElementById('pickup_lat').value);
+    formData.append('pickup_lng', document.getElementById('pickup_lng').value);
+    formData.append('drop_lat', document.getElementById('drop_lat').value);
+    formData.append('drop_lng', document.getElementById('drop_lng').value);
+    formData.append('material_type', document.getElementById('material_type').value);
+    formData.append('material_description', document.getElementById('material_description').value);
+    formData.append('material_weight', calculatedWeight.toFixed(2));
+    formData.append('distance_km', calculatedDistance.toFixed(2));
+    formData.append('fare_total', calculatedPrice.toFixed(2));
+    
+    const photoFile = document.getElementById('material_photo').files[0];
+    if (photoFile) {
+      formData.append('material_photo', photoFile);
+    }
+    
+    // Submit form
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Authentication token not found. Please login first.');
+      return;
+    }
+    
+    const response = await fetch('/api/customer/orders/simple', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to create order');
+    }
+    
+    const result = await response.json();
+    
+    // Show success message with all details
+    orderIdDisplay.textContent = result.order_id;
+    distanceDisplay.textContent = calculatedDistance.toFixed(2);
+    weightDisplay.textContent = calculatedWeight.toFixed(2);
+    priceDisplay.textContent = calculatedPrice.toFixed(2);
+    
+    orderFormContainer.style.display = 'none';
+    successMessage.style.display = 'block';
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert(`Error creating order: ${error.message}`);
+    priceCalculationSection.style.display = 'none';
+    createOrderBtn.style.display = 'block';
+  }
+}
+
+function resetForm() {
+  form.reset();
+  orderFormContainer.style.display = 'block';
+  successMessage.style.display = 'none';
+  priceCalculationSection.style.display = 'none';
+  calculatingPriceMessage.style.display = 'none';
+  createOrderBtn.style.display = 'block';
+  document.getElementById('detectionResult').style.display = 'none';
+  document.getElementById('detectedType').textContent = '-';
+  document.getElementById('detectedWeight').textContent = '-';
+  
+  // Clear map markers
+  if (pickupMarker) {
+    combinedMap.removeLayer(pickupMarker);
+    pickupMarker = null;
+  }
+  if (dropMarker) {
+    combinedMap.removeLayer(dropMarker);
+    dropMarker = null;
+  }
+  
+  // Reset hidden fields
+  document.getElementById('pickup_lat').value = '';
+  document.getElementById('pickup_lng').value = '';
+  document.getElementById('drop_lat').value = '';
+  document.getElementById('drop_lng').value = '';
+  
+  // Clear address displays
+  document.getElementById('pickupAddress').textContent = '';
+  document.getElementById('dropAddress').textContent = '';
+  
+  // Reset click counter
+  clickCount = 0;
+  
+  // Stop camera if it's running
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+  
+  // Reset calculated values
+  calculatedDistance = 0;
+  calculatedWeight = 0;
+  calculatedPrice = 0;
+}
+
+// Add custom CSS for markers
+const style = document.createElement('style');
+style.textContent = `
+  .marker {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+  }
+  .pickup-marker {
+    background-color: #007bff; /* Blue for pickup */
+  }
+  .drop-marker {
+    background-color: #dc3545; /* Red for drop */
+  }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

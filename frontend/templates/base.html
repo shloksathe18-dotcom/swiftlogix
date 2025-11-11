@@ -1,0 +1,220 @@
+{% set app_name = 'SwiftLogix' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ app_name }}</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <style>
+    /* Enhanced animations for all pages */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    @keyframes bounceIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    .animate-fadeIn { animation: fadeIn 0.6s ease forwards; }
+    .animate-slideInLeft { animation: slideInLeft 0.6s ease forwards; }
+    .animate-slideInRight { animation: slideInRight 0.6s ease forwards; }
+    .animate-bounceIn { animation: bounceIn 0.8s ease forwards; }
+    
+    /* Enhanced responsive behavior */
+    .responsive-container {
+      transition: all 0.3s ease;
+    }
+    
+    /* Smooth scrolling */
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    /* Enhanced navbar for mobile */
+    .navbar-nav .nav-link {
+      transition: all 0.3s ease;
+    }
+    
+    .navbar-nav .nav-link:hover {
+      transform: translateY(-2px);
+    }
+    
+    /* Profile dropdown styling */
+    .profile-dropdown {
+      position: relative;
+    }
+    
+    .profile-dropdown .dropdown-menu {
+      min-width: 250px;
+    }
+    
+    .profile-dropdown .dropdown-item-text {
+      padding: 0.5rem 1rem;
+      white-space: normal;
+    }
+    
+    .profile-dropdown .dropdown-item-text .fw-bold {
+      margin-bottom: 0.25rem;
+      display: block;
+    }
+    
+    .profile-dropdown .dropdown-item-text .text-muted {
+      margin-bottom: 0.1rem;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light animate-fadeIn">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">🚚 {{ app_name }}<span id="dashboardTitle"></span></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item" id="userInfo" style="display: none;">
+          <span class="nav-link">Welcome, <strong id="userName"></strong></span>
+        </li>
+        <li class="nav-item" id="loginLink">
+          <a class="nav-link btn btn-outline-primary mx-1" href="/login">Login</a>
+        </li>
+        <li class="nav-item" id="registerLink">
+          <a class="nav-link btn btn-primary mx-1" href="/register">Register</a>
+        </li>
+        <li class="nav-item profile-dropdown" id="profileDropdownContainer" style="display: none;">
+          <button class="btn btn-outline-primary dropdown-toggle" type="button" id="profileDropdown" data-bs-toggle="dropdown">
+            <i class="fas fa-user-circle"></i> Profile
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><div class="dropdown-item-text">
+              <div id="dropdownUserName" class="fw-bold"></div>
+              <div id="dropdownUserEmail" class="text-muted small"></div>
+            </div></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<div class="container my-3 responsive-container">
+  <div class="alert alert-info animate-slideInLeft" id="welcomeAlert">
+    <strong>🚀 Welcome to SwiftLogix!</strong> Your modern logistics platform. <a href="/login" class="alert-link">Login</a> or <a href="/register" class="alert-link">Register</a> to get started.
+  </div>
+  {% block content %}{% endblock %}
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script>
+  // Check if user is logged in and update UI
+  function updateAuthUI() {
+    try {
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      
+      const userInfo = document.getElementById('userInfo');
+      const userName = document.getElementById('userName');
+      const loginLink = document.getElementById('loginLink');
+      const registerLink = document.getElementById('registerLink');
+      const profileDropdownContainer = document.getElementById('profileDropdownContainer');
+      const welcomeAlert = document.getElementById('welcomeAlert');
+      
+      // Get current path
+      const currentPath = window.location.pathname;
+      
+      // Check if we're on a landing page route
+      const isLandingPage = currentPath === '/' || currentPath === '/home' || currentPath === '/landing';
+      
+      if (isLandingPage) {
+        // On landing page - hide profile button completely
+        profileDropdownContainer.style.display = 'none';
+        // Show welcome alert on landing page
+        welcomeAlert.style.display = 'block';
+      } else if (token && user) {
+        // User is logged in and not on landing page
+        userInfo.style.display = 'none'; // Hide the old welcome message
+        userName.textContent = user.name;
+        loginLink.style.display = 'none';
+        registerLink.style.display = 'none';
+        profileDropdownContainer.style.display = 'block'; // Show the new profile dropdown
+        
+        // Hide welcome alert on dashboards
+        welcomeAlert.style.display = 'none';
+        
+        // Populate profile dropdown
+        const dropdownUserName = document.getElementById('dropdownUserName');
+        const dropdownUserEmail = document.getElementById('dropdownUserEmail');
+        
+        if (dropdownUserName) dropdownUserName.textContent = user.name;
+        if (dropdownUserEmail) dropdownUserEmail.textContent = user.email;
+      } else {
+        // User is not logged in and not on landing page
+        userInfo.style.display = 'none';
+        userName.textContent = '';
+        loginLink.style.display = 'block';
+        registerLink.style.display = 'block';
+        profileDropdownContainer.style.display = 'none';
+        
+        // Hide welcome alert on non-landing pages when not logged in
+        welcomeAlert.style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Error updating auth UI:', error);
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    updateAuthUI(); // Update UI immediately
+    window.location.href = '/'; // Redirect to main page
+  }
+  
+  // Set dashboard title based on page
+  function setDashboardTitle() {
+    const dashboardTitle = document.getElementById('dashboardTitle');
+    if (dashboardTitle) {
+      // This will be set by individual dashboard pages
+      // For now, we'll leave it empty for the main page
+    }
+  }
+  
+  // Update UI when page loads
+  document.addEventListener('DOMContentLoaded', function() {
+    updateAuthUI();
+    setDashboardTitle();
+    
+    // Add staggered animations to elements
+    const animatedElements = document.querySelectorAll('.animate-on-scroll');
+    animatedElements.forEach((el, index) => {
+      el.style.animationDelay = `${index * 0.1}s`;
+    });
+  });
+  
+  // Also update UI immediately in case DOMContentLoaded has already fired
+  updateAuthUI();
+  setDashboardTitle();
+</script>
+</body>
+</html>

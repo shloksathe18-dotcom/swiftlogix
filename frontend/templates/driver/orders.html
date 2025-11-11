@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h2>📦 Driver Orders</h2>
+  <p class="text-muted">View and manage your assigned orders.</p>
+  
+  <div class="card">
+    <div class="card-header">
+      <ul class="nav nav-tabs card-header-tabs" id="orderTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="assigned-tab" data-bs-toggle="tab" data-bs-target="#assigned" type="button" role="tab">Assigned Orders</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="available-tab" data-bs-toggle="tab" data-bs-target="#available" type="button" role="tab">Available Orders</button>
+        </li>
+      </ul>
+    </div>
+    <div class="card-body">
+      <div class="tab-content" id="orderTabsContent">
+        <!-- Assigned Orders Tab -->
+        <div class="tab-pane fade show active" id="assigned" role="tabpanel">
+          <div id="assignedLoading" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <div id="assignedOrders" style="display: none;">
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Pickup</th>
+                    <th>Drop</th>
+                    <th>Status</th>
+                    <th>Distance</th>
+                    <th>Earnings</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="assignedOrdersBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="noAssignedOrders" style="display: none;" class="text-center py-4">
+            <p class="text-muted">No assigned orders yet.</p>
+          </div>
+        </div>
+        
+        <!-- Available Orders Tab -->
+        <div class="tab-pane fade" id="available" role="tabpanel">
+          <div id="availableLoading" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <div id="availableOrders" style="display: none;">
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Pickup</th>
+                    <th>Drop</th>
+                    <th>Fare</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="availableOrdersBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="noAvailableOrders" style="display: none;" class="text-center py-4">
+            <p class="text-muted">No available orders at the moment.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Check authentication
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  
+  if (!token || !user || user.role !== 'driver') {
+    alert('Please login as a driver to access this page');
+    window.location.href = '/login';
+  }
+
+  // Load assigned orders
+  async function loadAssignedOrders() {
+    try {
+      const orders = await SwiftLogix.authFetch('/api/driver/orders');
+      
+      document.getElementById('assignedLoading').style.display = 'none';
+      
+      if (orders.length === 0) {
+        document.getElementById('noAssignedOrders').style.display = 'block';
+        return;
+      }
+      
+      document.getElementById('assignedOrders').style.display = 'block';
+      
+      // Populate table
+      const tbody = document.getElementById('assignedOrdersBody');
+      tbody.innerHTML = orders.map(order => `
+        <tr>
+          <td><strong>#${order.id}</strong></td>
+          <td>${order.pickup_address}</td>
+          <td>${order.drop_address}</td>
+          <td><span class="badge bg-${getStatusColor(order.status)}">${order.status}</span></td>
+          <td>${order.distance_km} km</td>
+          <td>₹${order.driver_share}</td>
+          <td>${new Date(order.created_at).toLocaleDateString()}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="updateOrderStatus(${order.id})">Update Status</button>
+          </td>
+        </tr>
+      `).join('');
+      
+    } catch (error) {
+      document.getElementById('assignedLoading').innerHTML = `
+        <div class="alert alert-danger">Failed to load assigned orders: ${error.message}</div>
+      `;
+    }
+  }
+  
+  // Load available orders
+  async function loadAvailableOrders() {
+    try {
+      const orders = await SwiftLogix.authFetch('/api/driver/orders/available');
+      
+      document.getElementById('availableLoading').style.display = 'none';
+      
+      if (orders.length === 0) {
+        document.getElementById('noAvailableOrders').style.display = 'block';
+        return;
+      }
+      
+      document.getElementById('availableOrders').style.display = 'block';
+      
+      // Populate table
+      const tbody = document.getElementById('availableOrdersBody');
+      tbody.innerHTML = orders.map(order => `
+        <tr>
+          <td><strong>#${order.id}</strong></td>
+          <td>Lat: ${order.pickup[0].toFixed(4)}, Lng: ${order.pickup[1].toFixed(4)}</td>
+          <td>Lat: ${order.drop[0].toFixed(4)}, Lng: ${order.drop[1].toFixed(4)}</td>
+          <td>₹${order.fare_total}</td>
+          <td>
+            <button class="btn btn-sm btn-success" onclick="acceptOrder(${order.id})">Accept</button>
+          </td>
+        </tr>
+      `).join('');
+      
+    } catch (error) {
+      document.getElementById('availableLoading').innerHTML = `
+        <div class="alert alert-danger">Failed to load available orders: ${error.message}</div>
+      `;
+    }
+  }
+  
+  // Accept an order
+  async function acceptOrder(orderId) {
+    try {
+      await SwiftLogix.authFetch(`/api/driver/orders/${orderId}/accept`, {
+        method: 'POST'
+      });
+      
+      // Show success message and refresh
+      alert('Order accepted successfully!');
+      loadAvailableOrders();
+      loadAssignedOrders();
+      
+    } catch (error) {
+      alert(`Failed to accept order: ${error.message}`);
+    }
+  }
+  
+  // Update order status
+  async function updateOrderStatus(orderId) {
+    const status = prompt('Enter new status (picked, delivering, delivered, cancelled):');
+    if (!status) return;
+    
+    const validStatuses = ['picked', 'delivering', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      alert('Invalid status. Please enter one of: picked, delivering, delivered, cancelled');
+      return;
+    }
+    
+    try {
+      await SwiftLogix.authFetch(`/api/driver/orders/${orderId}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status: status })
+      });
+      
+      // Show success message and refresh
+      alert('Order status updated successfully!');
+      loadAssignedOrders();
+      
+    } catch (error) {
+      alert(`Failed to update order status: ${error.message}`);
+    }
+  }
+  
+  function getStatusColor(status) {
+    const colors = {
+      'pending': 'warning',
+      'assigned': 'info',
+      'picked': 'primary',
+      'delivering': 'primary',
+      'delivered': 'success',
+      'cancelled': 'danger'
+    };
+    return colors[status] || 'secondary';
+  }
+  
+  // Initialize
+  document.addEventListener('DOMContentLoaded', function() {
+    loadAssignedOrders();
+    loadAvailableOrders();
+    
+    // Refresh every 30 seconds
+    setInterval(() => {
+      const activeTab = document.querySelector('.nav-link.active').id;
+      if (activeTab === 'assigned-tab') {
+        loadAssignedOrders();
+      } else if (activeTab === 'available-tab') {
+        loadAvailableOrders();
+      }
+    }, 30000);
+  });
+  
+  // Tab change handlers
+  document.getElementById('assigned-tab').addEventListener('shown.bs.tab', loadAssignedOrders);
+  document.getElementById('available-tab').addEventListener('shown.bs.tab', loadAvailableOrders);
+</script>
+{% endblock %}

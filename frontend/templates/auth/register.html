@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register - SwiftLogix</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}" />
+  <style>
+    /* Additional animations for auth pages */
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+    
+    .float-animation {
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    .auth-card {
+      animation: slideUp 0.8s ease;
+    }
+    
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.2); }
+      50% { box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.2); }
+      100% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.2); }
+    }
+    
+    .auth-card:hover {
+      animation: pulseGlow 2s ease infinite;
+    }
+    
+    /* Form element entrance animations */
+    .form-element {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    
+    .form-element.animate {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    /* Role-specific fields */
+    .role-specific {
+      display: none;
+    }
+    
+    /* Ensure emoji displays properly */
+    .emoji {
+      font-family: "Apple Color Emoji", "Segoe UI Emoji", NotoColorEmoji, "Noto Color Emoji", "Segoe UI Symbol", "Android Emoji", EmojiSymbols;
+    }
+  </style>
+</head>
+<body class="auth-body">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1 class="auth-logo float-animation emoji">🚚 SwiftLogix</h1>
+        <p class="auth-subtitle">Create your account and get started</p>
+      </div>
+      
+      <form id="registerForm" class="auth-form">
+        <div class="alert alert-danger d-none" id="errorAlert"></div>
+        <div class="alert alert-success d-none" id="successAlert"></div>
+        
+        <div class="mb-3 form-element">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-control" name="name" placeholder="John Doe" required />
+        </div>
+        
+        <div class="mb-3 form-element">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-control" name="email" placeholder="your@email.com" required />
+        </div>
+        
+        <div class="mb-3 form-element">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-control" name="password" placeholder="Min 6 characters" minlength="6" required />
+        </div>
+        
+        <div class="mb-3 form-element">
+          <label class="form-label">Phone Number</label>
+          <input type="tel" class="form-control" name="phone" placeholder="Enter your phone number" />
+        </div>
+        
+        <div class="mb-3 form-element">
+          <label class="form-label">Register As</label>
+          <select class="form-select" name="role" required>
+            <option value="">Select Role</option>
+            <option value="customer">Customer - Order deliveries</option>
+            <option value="driver">Driver - Deliver packages</option>
+          </select>
+        </div>
+        
+        <!-- Customer-specific fields -->
+        <div id="customerFields" class="role-specific">
+          <div class="mb-3 form-element">
+            <label class="form-label">Address</label>
+            <textarea class="form-control" name="address" placeholder="Enter your full address"></textarea>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6 mb-3 form-element">
+              <label class="form-label">City</label>
+              <input type="text" class="form-control" name="city" placeholder="City" />
+            </div>
+            <div class="col-md-6 mb-3 form-element">
+              <label class="form-label">State</label>
+              <input type="text" class="form-control" name="state" placeholder="State" />
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6 mb-3 form-element">
+              <label class="form-label">ZIP Code</label>
+              <input type="text" class="form-control" name="zip_code" placeholder="ZIP Code" />
+            </div>
+            <div class="col-md-6 mb-3 form-element">
+              <label class="form-label">Country</label>
+              <input type="text" class="form-control" name="country" value="India" readonly />
+            </div>
+          </div>
+        </div>
+        
+        <!-- Driver-specific fields -->
+        <div id="driverFields" class="role-specific">
+          <div class="mb-3 form-element">
+            <label class="form-label">License Number</label>
+            <input type="text" class="form-control" name="license_number" placeholder="Enter your license number" />
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6 mb-3 form-element">
+              <label class="form-label">Vehicle Type</label>
+              <select class="form-select" name="vehicle_type">
+                <option value="">Select Vehicle Type</option>
+                <option value="bike">Bike</option>
+                <option value="scooter">Scooter</option>
+                <option value="car">Car</option>
+                <option value="van">Van</option>
+                <option value="truck">Truck</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3 form-element">
+              <label class="form-label">Vehicle Number</label>
+              <input type="text" class="form-control" name="vehicle_number" placeholder="Vehicle Registration Number" />
+            </div>
+          </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-100 mb-3 form-element" id="registerBtn">
+          <span id="btnText">Create Account</span>
+          <span id="btnLoader" class="loading d-none"></span>
+        </button>
+        
+        <div class="text-center form-element">
+          <p class="mb-0">Already have an account? <a href="/login" class="auth-link">Login here</a></p>
+        </div>
+      </form>
+      
+      <div class="auth-footer">
+        <p>© 2025 SwiftLogix. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script>
+    const form = document.getElementById('registerForm');
+    const errorAlert = document.getElementById('errorAlert');
+    const successAlert = document.getElementById('successAlert');
+    const registerBtn = document.getElementById('registerBtn');
+    const btnText = document.getElementById('btnText');
+    const btnLoader = document.getElementById('btnLoader');
+    const roleSelect = document.querySelector('select[name="role"]');
+    const customerFields = document.getElementById('customerFields');
+    const driverFields = document.getElementById('driverFields');
+
+    // Show/hide role-specific fields based on selection
+    roleSelect.addEventListener('change', function() {
+      // Hide all role-specific fields
+      document.querySelectorAll('.role-specific').forEach(el => {
+        el.style.display = 'none';
+      });
+      
+      // Show fields for selected role
+      if (this.value === 'customer') {
+        customerFields.style.display = 'block';
+      } else if (this.value === 'driver') {
+        driverFields.style.display = 'block';
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorAlert.classList.add('d-none');
+      successAlert.classList.add('d-none');
+      
+      // Show loading
+      btnText.classList.add('d-none');
+      btnLoader.classList.remove('d-none');
+      registerBtn.disabled = true;
+
+      // Collect form data
+      const formData = new FormData(form);
+      const data = {};
+      
+      // Add basic fields
+      data.name = formData.get('name');
+      data.email = formData.get('email');
+      data.password = formData.get('password');
+      data.role = formData.get('role');
+      data.phone = formData.get('phone');
+      
+      // Add role-specific fields
+      if (data.role === 'customer') {
+        data.address = formData.get('address');
+        data.city = formData.get('city');
+        data.state = formData.get('state');
+        data.zip_code = formData.get('zip_code');
+      } else if (data.role === 'driver') {
+        data.license_number = formData.get('license_number');
+        data.vehicle_type = formData.get('vehicle_type');
+        data.vehicle_number = formData.get('vehicle_number');
+      }
+
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          // Save token
+          localStorage.setItem('token', result.token);
+          localStorage.setItem('user', JSON.stringify(result.user));
+          
+          successAlert.textContent = 'Registration successful! Redirecting...';
+          successAlert.classList.remove('d-none');
+          
+          // Redirect after 1 second
+          setTimeout(() => {
+            if (result.user.role === 'customer') {
+              window.location.href = '/customer';
+            } else if (result.user.role === 'driver') {
+              window.location.href = '/driver';
+            } else if (result.user.role === 'admin') {
+              window.location.href = '/admin';
+            }
+          }, 1000);
+        } else {
+          errorAlert.textContent = result.message || 'Registration failed';
+          errorAlert.classList.remove('d-none');
+        }
+      } catch (error) {
+        errorAlert.textContent = 'Network error. Please try again.';
+        errorAlert.classList.remove('d-none');
+      } finally {
+        btnText.classList.remove('d-none');
+        btnLoader.classList.add('d-none');
+        registerBtn.disabled = false;
+      }
+    });
+    
+    // Add entrance animations to form elements
+    document.addEventListener('DOMContentLoaded', function() {
+      const formElements = document.querySelectorAll('.form-element');
+      formElements.forEach((el, index) => {
+        setTimeout(() => {
+          el.classList.add('animate');
+        }, 100 + (index * 100));
+      });
+    });
+  </script>
+</body>
+</html>

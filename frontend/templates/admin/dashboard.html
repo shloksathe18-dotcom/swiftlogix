@@ -1,0 +1,379 @@
+{% extends 'base.html' %}
+{% block content %}
+<script>
+  // Set dashboard title for admin
+  document.addEventListener('DOMContentLoaded', function() {
+    const dashboardTitle = document.getElementById('dashboardTitle');
+    if (dashboardTitle) {
+      dashboardTitle.textContent = ' | Admin Dashboard';
+    }
+  });
+</script>
+
+<div class="dashboard-header mb-4 animate-fadeIn">
+  <p class="text-muted">Monitor platform performance and manage operations.</p>
+</div>
+
+<div class="row mb-4 animate-slideInLeft">
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="stat-card animate-on-scroll">
+      <div class="stat-icon">👥</div>
+      <h3 id="totalCustomers">0</h3>
+      <p>Total Customers</p>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="stat-card animate-on-scroll">
+      <div class="stat-icon">🚚</div>
+      <h3 id="totalDrivers">0</h3>
+      <p>Total Drivers</p>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="stat-card animate-on-scroll">
+      <div class="stat-icon">📦</div>
+      <h3 id="totalOrders">0</h3>
+      <p>Total Orders</p>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="stat-card animate-on-scroll">
+      <div class="stat-icon">💰</div>
+      <h3 id="totalRevenue">₹0</h3>
+      <p>Platform Revenue</p>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4 animate-slideInRight">
+  <div class="col-lg-6 mb-3">
+    <div class="card h-100 animate-on-scroll">
+      <div class="card-header">
+        <h5 class="mb-0">🚀 Active Orders</h5>
+      </div>
+      <div class="card-body text-center">
+        <h2 id="activeOrders" class="display-4 gradient-text">0</h2>
+        <p class="text-muted">Orders in progress</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6 mb-3">
+    <div class="card h-100 animate-on-scroll">
+      <div class="card-header">
+        <h5 class="mb-0">📊 Commission Rate</h5>
+      </div>
+      <div class="card-body text-center">
+        <h2 class="display-4 gradient-text">10%</h2>
+        <p class="text-muted">Platform commission per order</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="action-buttons mb-4 animate-slideInLeft">
+  <a href="/admin/manage_users" class="btn btn-primary btn-lg animate-on-scroll">
+    <span>👥 Manage Users</span>
+  </a>
+  <a href="/api/admin/orders/export" class="btn btn-success btn-lg animate-on-scroll" download>
+    <span>📥 Export Orders (CSV)</span>
+  </a>
+  <button class="btn btn-secondary btn-lg animate-on-scroll" onclick="refreshData()">
+    <span>🔄 Refresh Data</span>
+  </button>
+</div>
+
+<div class="card animate-fadeIn">
+  <div class="card-header">
+    <h5 class="mb-0">📈 Platform Statistics</h5>
+  </div>
+  <div class="card-body">
+    <div id="loading" class="text-center py-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+    <div id="statsTable" style="display: none;">
+      <div class="table-responsive">
+        <table class="table table-borderless">
+          <tbody>
+            <tr>
+              <td><strong>Total Customers:</strong></td>
+              <td id="customersDetail">0</td>
+              <td><strong>Total Drivers:</strong></td>
+              <td id="driversDetail">0</td>
+            </tr>
+            <tr>
+              <td><strong>Total Orders:</strong></td>
+              <td id="ordersDetail">0</td>
+              <td><strong>Active Orders:</strong></td>
+              <td id="activeDetail">0</td>
+            </tr>
+            <tr>
+              <td><strong>Platform Revenue:</strong></td>
+              <td id="revenueDetail" class="text-success">₹0</td>
+              <td><strong>Average Order Value:</strong></td>
+              <td id="avgOrder">₹0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="alert alert-info mt-4 animate-on-scroll">
+        <strong>💡 Revenue Calculation:</strong> Platform earns 10% commission on each completed order. 
+        Drivers receive 90% of the total fare.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Check authentication
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  
+  if (!token || !user || user.role !== 'admin') {
+    alert('Please login as an admin to access this page');
+    window.location.href = '/login';
+  }
+
+  // Load dashboard data
+  async function loadDashboard() {
+    try {
+      const data = await SwiftLogix.authFetch('/api/admin/dashboard');
+      
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('statsTable').style.display = 'block';
+      
+      // Update stat cards
+      document.getElementById('totalCustomers').textContent = data.customers;
+      document.getElementById('totalDrivers').textContent = data.drivers;
+      document.getElementById('totalOrders').textContent = data.orders;
+      document.getElementById('totalRevenue').textContent = '₹' + data.revenue.toFixed(2);
+      document.getElementById('activeOrders').textContent = data.active_orders;
+      
+      // Update details table
+      document.getElementById('customersDetail').textContent = data.customers;
+      document.getElementById('driversDetail').textContent = data.drivers;
+      document.getElementById('ordersDetail').textContent = data.orders;
+      document.getElementById('activeDetail').textContent = data.active_orders;
+      document.getElementById('revenueDetail').textContent = '₹' + data.revenue.toFixed(2);
+      
+      const avgOrder = data.orders > 0 ? (data.revenue / data.orders * 10).toFixed(2) : 0;
+      document.getElementById('avgOrder').textContent = '₹' + avgOrder;
+      
+      // Trigger animations
+      triggerScrollAnimations();
+      
+    } catch (error) {
+      document.getElementById('loading').innerHTML = `
+        <div class="alert alert-danger">Failed to load dashboard: ${error.message}</div>
+      `;
+    }
+  }
+
+  function refreshData() {
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('statsTable').style.display = 'none';
+    loadDashboard();
+  }
+  
+  function triggerScrollAnimations() {
+    const elements = document.querySelectorAll('.animate-on-scroll');
+    elements.forEach((el, index) => {
+      // Add delay for staggered effect
+      setTimeout(() => {
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      }, index * 100);
+    });
+  }
+  
+  // Initialize animations
+  document.addEventListener('DOMContentLoaded', function() {
+    // Set initial state for animated elements
+    const animatedElements = document.querySelectorAll('.animate-on-scroll');
+    animatedElements.forEach(el => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(20px)';
+      el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    });
+    
+    // Trigger animations after a short delay
+    setTimeout(triggerScrollAnimations, 300);
+  });
+
+  loadDashboard();
+  // Refresh dashboard every 30 seconds
+  setInterval(loadDashboard, 30000);
+</script>
+
+<style>
+.dashboard-header h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.stat-card:hover::before {
+  left: 100%;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+  border-color: #667eea;
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover .stat-icon {
+  transform: scale(1.1);
+}
+
+.stat-card h3 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-card p {
+  color: #6b7280;
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.action-buttons .btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
+  z-index: -1;
+}
+
+.action-buttons .btn:hover::before {
+  left: 100%;
+}
+
+.card {
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  height: 100%;
+  transition: all 0.3s ease;
+  margin-bottom: 2rem;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.card-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 15px 15px 0 0 !important;
+  padding: 1.25rem;
+}
+
+.card-header h5 {
+  color: white;
+  background: none;
+  -webkit-text-fill-color: white;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Enhanced responsive behavior */
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .action-buttons .btn {
+    min-width: 100%;
+  }
+  
+  .stat-card {
+    padding: 1.5rem;
+  }
+  
+  .stat-card h3 {
+    font-size: 1.5rem;
+  }
+  
+  .dashboard-header h2 {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .stat-card {
+    padding: 1.25rem;
+  }
+  
+  .stat-card h3 {
+    font-size: 1.25rem;
+  }
+  
+  .stat-icon {
+    font-size: 2rem;
+  }
+}
+</style>
+{% endblock %}

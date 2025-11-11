@@ -1,0 +1,349 @@
+{% extends 'base.html' %}
+{% block content %}
+<!-- Shlok: This is the home page for SwiftLogix Logistics Platform -->
+<div class="landing-hero">
+  <div class="row align-items-center">
+    <div class="col-lg-6 mb-4 mb-lg-0">
+      <h1 class="display-3 fw-bold mb-4">
+        Fast & Reliable <span class="gradient-text">Logistics</span> Platform
+      </h1>
+      <p class="lead mb-4">
+        SwiftLogix connects customers with professional drivers for seamless package delivery. 
+        Track your orders in real-time with our advanced GPS tracking system.
+      </p>
+      <div class="d-flex gap-3 mb-4">
+        <a href="/register" class="btn btn-primary btn-lg">Get Started</a>
+        <a href="/login" class="btn btn-outline-primary btn-lg">Sign In</a>
+      </div>
+      <div class="stats-row">
+        <div class="stat-item">
+          <h3 class="gradient-text mb-0">1000+</h3>
+          <p class="text-muted mb-0">Active Drivers</p>
+        </div>
+        <div class="stat-item">
+          <h3 class="gradient-text mb-0">5000+</h3>
+          <p class="text-muted mb-0">Deliveries</p>
+        </div>
+        <div class="stat-item">
+          <h3 class="gradient-text mb-0">98%</h3>
+          <p class="text-muted mb-0">Satisfaction</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="feature-cards">
+        <div class="feature-card">
+          <div class="feature-icon">📦</div>
+          <h4>Easy Ordering</h4>
+          <p>Create orders in seconds with our intuitive interface</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🗺️</div>
+          <h4>Live Tracking</h4>
+          <p>Track your package in real-time on interactive maps</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💰</div>
+          <h4>Fair Pricing</h4>
+          <p>Transparent pricing: ₹30 base + ₹10/km + ₹5/kg</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h4>Fast Delivery</h4>
+          <p>Quick pickup and delivery by verified drivers</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="how-it-works mt-5">
+  <h2 class="text-center mb-5">How It Works</h2>
+  <div class="row">
+    <div class="col-md-4 mb-4">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <h4>Create Order</h4>
+        <p>Enter pickup and delivery details with package information</p>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <h4>Driver Accepts</h4>
+        <p>Nearby drivers receive notification and accept your order</p>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <h4>Track & Receive</h4>
+        <p>Monitor live location and receive your package safely</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Shlok: Adding user ratings section -->
+<div class="ratings-section mt-5">
+  <h2 class="text-center mb-5">What Our Users Say</h2>
+  <div class="row">
+    <!-- Shlok - Business Owner Rating -->
+    <div class="col-md-4 mb-4">
+      <div class="rating-card">
+        <div class="rating-stars">
+          <span>⭐⭐⭐⭐⭐</span>
+        </div>
+        <p class="rating-text">"As a business owner, SwiftLogix has revolutionized our logistics operations. The platform is reliable and the drivers are professional."</p>
+        <div class="rating-author">- Shlok, Business Owner</div>
+      </div>
+    </div>
+    
+    <!-- Vard Raut - Customer Rating -->
+    <div class="col-md-4 mb-4">
+      <div class="rating-card">
+        <div class="rating-stars">
+          <span>⭐⭐⭐⭐⭐</span>
+        </div>
+        <p class="rating-text">"I've been using SwiftLogix for all my package deliveries and I'm extremely satisfied. The real-time tracking gives me peace of mind."</p>
+        <div class="rating-author">- Vard Raut, Customer</div>
+      </div>
+    </div>
+    
+    <!-- Aeya Waghmare - Driver Rating -->
+    <div class="col-md-4 mb-4">
+      <div class="rating-card">
+        <div class="rating-stars">
+          <span>⭐⭐⭐⭐⭐</span>
+        </div>
+        <p class="rating-text">"Working as a driver with SwiftLogix has been a great experience. Fair compensation and excellent support from the team."</p>
+        <div class="rating-author">- Aeya Waghmare, Driver</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="cta-section mt-5 text-center">
+  <h2 class="mb-4">Ready to Get Started?</h2>
+  <p class="lead mb-4">Join thousands of satisfied customers and drivers on SwiftLogix</p>
+  <div class="d-flex gap-3 justify-content-center">
+    <a href="/register?role=customer" class="btn btn-primary btn-lg">Register as Customer</a>
+    <a href="/register?role=driver" class="btn btn-secondary btn-lg">Register as Driver</a>
+  </div>
+</div>
+
+<script>
+  // Set dashboard title for main page
+  document.addEventListener('DOMContentLoaded', function() {
+    // For the main page, we don't need to set a dashboard title
+    // The base template will show just "SwiftLogix"
+  });
+</script>
+
+<style>
+.landing-hero {
+  padding: 3rem 0;
+}
+
+.stats-row {
+  display: flex;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.stat-item h3 {
+  font-size: 2.5rem;
+  font-weight: 800;
+}
+
+.feature-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.feature-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+  border-color: #667eea;
+}
+
+.feature-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.feature-card h4 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.feature-card p {
+  color: #6b7280;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.how-it-works h2 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.step-card {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+  height: 100%;
+}
+
+.step-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+}
+
+.step-number {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 auto 1.5rem;
+}
+
+.step-card h4 {
+  font-weight: 700;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.step-card p {
+  color: #6b7280;
+  margin: 0;
+}
+
+.cta-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 4rem 2rem;
+  border-radius: 20px;
+  color: white;
+}
+
+.cta-section h2 {
+  color: white;
+  background: none;
+  -webkit-text-fill-color: white;
+}
+
+.cta-section .lead {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.cta-section .btn-primary {
+  background: white;
+  color: #667eea;
+  border: none;
+}
+
+.cta-section .btn-primary:hover {
+  background: #f3f4f6;
+  transform: translateY(-2px);
+}
+
+.cta-section .btn-secondary {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid white;
+  color: white;
+}
+
+.cta-section .btn-secondary:hover {
+  background: white;
+  color: #667eea;
+}
+
+.ratings-section {
+  background: #f8f9fa;
+  padding: 3rem 0;
+  border-radius: 16px;
+}
+
+.rating-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+  height: 100%;
+}
+
+.rating-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+}
+
+.rating-stars {
+  color: #ffc107;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.rating-text {
+  font-style: italic;
+  color: #495057;
+  margin-bottom: 1.5rem;
+}
+
+.rating-author {
+  font-weight: 600;
+  color: #667eea;
+}
+
+@media (max-width: 768px) {
+  .feature-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  /* Mobile responsive ratings */
+  .ratings-section .row {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .ratings-section .col-md-4 {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+}
+</style>
+{% endblock %}

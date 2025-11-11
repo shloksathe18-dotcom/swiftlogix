@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+  <h3 class="mb-4">📍 Track Your Order</h3>
+  
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="input-group">
+        <input id="oid" class="form-control" placeholder="Enter Order ID" />
+        <button id="btn" class="btn btn-primary">Track Order</button>
+      </div>
+      <div class="form-text">Enter the order ID you want to track</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h5 class="mb-0">🗺️ Order Location</h5>
+    </div>
+    <div class="card-body">
+      <div id="map" style="height: 400px; border-radius: 8px;"></div>
+      <div id="orderInfo" class="mt-3"></div>
+      <div id="noOrder" class="alert alert-info d-none">
+        Enter an order ID and click "Track Order" to see the location
+      </div>
+      <div id="error" class="alert alert-danger d-none"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Initialize map centered on Delhi (default location)
+const map = SwiftLogix.initMap('map', 28.6139, 77.2090, 12);
+let driverMarker = null;
+let pickupMarker = null;
+let destinationMarker = null;
+let routePolyline = null;
+
+// Get order ID from URL parameter if available
+const urlParams = new URLSearchParams(window.location.search);
+const orderIdFromUrl = urlParams.get('id');
+if (orderIdFromUrl) {
+  document.getElementById('oid').value = orderIdFromUrl;
+  trackOrder();
+}
+
+document.getElementById('btn').onclick = trackOrder;
+
+async function trackOrder() {
+  const orderId = document.getElementById('oid').value.trim();
+  
+  if (!orderId) {
+    showError('Please enter an order ID');
+    return;
+  }
+  
+  // Clear previous markers and routes
+  clearMap();
+  
+  try {
+    // Show loading state
+    document.getElementById('error').classList.add('d-none');
+    document.getElementById('noOrder').classList.add('d-none');
+    document.getElementById('orderInfo').innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div></div>';
+    
+    // Fetch order tracking data
+    const res = await SwiftLogix.authFetch(`/api/customer/orders/${orderId}/track`);
+    
+    // Display order information
+    displayOrderInfo(res, orderId);
+    
+    // If we have driver location, show it on map
+    if (res.driver && res.driver.lat && res.driver.lng) {
+      // Add driver marker
+      driverMarker = SwiftLogix.addMarker(map, res.driver.lat, res.driver.lng, 'Driver Location');
+      
+      // Center map on driver
+      map.setView([res.driver.lat, res.driver.lng], 14);
+      
+      // Show driver coordinates
+      document.getElementById('orderInfo').innerHTML += `
+        <div class="mt-3">
+          <h6>Driver Coordinates</h6>
+          <p>Latitude: ${res.driver.lat.toFixed(6)}<br>Longitude: ${res.driver.lng.toFixed(6)}</p>
+        </div>
+      `;
+    } else {
+      // If no driver assigned, show order status
+      document.getElementById('orderInfo').innerHTML += `
+        <div class="mt-3">
+          <h6>Order Status</h6>
+          <p>Status: <span class="badge bg-${getStatusColor(res.status)}">${res.status}</span></p>
+          ${res.status === 'pending' ? '<p class="text-muted">Your order is pending assignment to a driver.</p>' : ''}
+        </div>
+      `;
+    }
+    
+  } catch (error) {
+    showError('Failed to track order: ' + error.message);
+    document.getElementById('orderInfo').innerHTML = '';
+  }
+}
+
+function displayOrderInfo(data, orderId) {
+  let statusHtml = `
+    <h5>Order #${orderId}</h5>
+    <p>Status: <span class="badge bg-${getStatusColor(data.status)}">${data.status}</span></p>
+  `;
+  
+  document.getElementById('orderInfo').innerHTML = statusHtml;
+}
+
+function getStatusColor(status) {
+  const colors = {
+    'pending': 'warning',
+    'assigned': 'info',
+    'picked': 'primary',
+    'delivering': 'primary',
+    'delivered': 'success',
+    'cancelled': 'danger'
+  };
+  return colors[status] || 'secondary';
+}
+
+function showError(message) {
+  document.getElementById('error').textContent = message;
+  document.getElementById('error').classList.remove('d-none');
+  document.getElementById('orderInfo').innerHTML = '';
+}
+
+function clearMap() {
+  if (driverMarker) {
+    map.removeLayer(driverMarker);
+    driverMarker = null;
+  }
+  if (pickupMarker) {
+    map.removeLayer(pickupMarker);
+    pickupMarker = null;
+  }
+  if (destinationMarker) {
+    map.removeLayer(destinationMarker);
+    destinationMarker = null;
+  }
+  if (routePolyline) {
+    map.removeLayer(routePolyline);
+    routePolyline = null;
+  }
+}
+
+// Allow Enter key to trigger tracking
+document.getElementById('oid').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    trackOrder();
+  }
+});
+</script>
+
+<style>
+.card {
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.card-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 15px 15px 0 0 !important;
+  padding: 1.25rem;
+}
+
+#map {
+  border: 1px solid #ddd;
+}
+</style>
+{% endblock %}
