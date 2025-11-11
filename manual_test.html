@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manual Test</title>
+</head>
+<body>
+    <h1>Manual Test Instructions</h1>
+    <ol>
+        <li>Open your browser and go to http://127.0.0.1:5000/</li>
+        <li>Check that you see "Login" and "Register" links in the navigation bar</li>
+        <li>Check that you see the welcome message with login/register links</li>
+        <li>Click on "Login" and login with:
+            <ul>
+                <li>Email: shloksathe18@gmail.com</li>
+                <li>Password: shlok@2116</li>
+            </ul>
+        </li>
+        <li>After logging in, you should be redirected to the admin dashboard</li>
+        <li>Check that you now see "Welcome, shlok" and "Logout" in the navigation bar</li>
+        <li>Check that you no longer see "Login" and "Register" links</li>
+        <li>Check that you see the "Welcome back!" message instead of the original welcome message</li>
+        <li>Click on the profile dropdown and select "Logout"</li>
+        <li>Verify that you are logged out and see the original login/register UI again</li>
+    </ol>
+    
+    <p><strong>Note:</strong> This test must be done manually in a browser because the UI updates happen via JavaScript on the client side.</p>
+</body>
+</html>

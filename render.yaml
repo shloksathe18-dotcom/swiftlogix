@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: swiftlogix
+    runtime: python
+    buildCommand: pip install -r src/backend/requirements.txt
+    startCommand: gunicorn --chdir src run_app:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
